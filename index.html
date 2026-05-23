@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>調律管理システム｜分類ボタン版</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f4f6f8;
+      color: #1f2937;
+    }
+    header {
+      background: #263238;
+      color: white;
+      padding: 18px 24px;
+    }
+    header h1 { margin: 0; font-size: 22px; }
+    header p { margin: 6px 0 0; font-size: 13px; opacity: .85; }
+
+    .tabs {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 12px 18px;
+      background: white;
+      border-bottom: 1px solid #dfe3e8;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    }
+    .tab-btn {
+      width: auto;
+      margin: 0;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: #2563eb;
+      color: white;
+      border-color: #2563eb;
+    }
+
+    main { padding: 18px; }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    section, .card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.06);
+      margin-bottom: 14px;
+    }
+
+    h2 { margin: 0 0 12px; font-size: 18px; }
+    h3 { margin: 16px 0 8px; font-size: 15px; }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    input, textarea, select, button {
+      width: 100%;
+      margin-top: 5px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      font-size: 14px;
+    }
+
+    textarea { min-height: 74px; resize: vertical; }
+
+    button {
+      border: none;
+      background: #2563eb;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:hover { opacity: .9; }
+    button.secondary { background: #607d8b; }
+    button.danger { background: #dc2626; }
+    button.print { background: #059669; }
+    button.small { width: auto; padding: 6px 9px; font-size: 12px; margin-top: 0; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 18px;
+    }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr 140px 140px 140px;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: white;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e5e7eb;
+      padding: 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { background: #f8fafc; font-size: 12px; }
+    tr:hover { background: #f9fafb; }
+
+    .pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #075985;
+      font-size: 12px;
+      font-weight: 700;
+      margin: 2px 2px 2px 0;
+    }
+    .pill.black { background:#111827; color:white; }
+    .pill.gray { background:#e5e7eb; color:#374151; }
+    .pill.green { background:#dcfce7; color:#166534; }
+    .pill.orange { background:#ffedd5; color:#9a3412; }
+
+    .muted { color: #6b7280; font-size: 12px; }
+    .selected { outline: 2px solid #2563eb; }
+
+    .history-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 8px;
+      background: #fafafa;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .hidden { display: none; }
+
+    .slide-panel {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height .28s ease, opacity .22s ease, margin-top .22s ease;
+      margin-top: 0;
+    }
+    .slide-panel.open {
+      max-height: 300px;
+      opacity: 1;
+      margin-top: 8px;
+    }
+
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid #d1d5db;
+      background: white;
+    }
+    .month-box {
+      min-height: 230px;
+      border-right: 1px solid #d1d5db;
+      border-bottom: 1px solid #d1d5db;
+    }
+    .month-title {
+      background: #f3f4f6;
+      text-align: center;
+      font-weight: 800;
+      padding: 12px;
+      font-size: 18px;
+    }
+    .schedule-item {
+      padding: 12px 16px;
+      border-top: 1px dashed #d1d5db;
+      font-size: 14px;
+    }
+    .schedule-item:first-of-type { border-top: none; }
+    .schedule-date { font-weight: 800; margin-bottom: 7px; }
+    .name-link {
+      color: #0369a1;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    @media (max-width: 1100px) {
+      .layout { grid-template-columns: 1fr; }
+      .toolbar { grid-template-columns: 1fr; }
+      .month-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .month-grid { grid-template-columns: 1fr; }
+      main { padding: 10px; }
+      .tabs { padding: 10px; }
+      .tab-btn { flex: 1; }
+    }
+    @media print {
+      header, .tabs, .toolbar, .no-print { display: none !important; }
+      body { background: white; }
+      main { padding: 0; }
+      section, .card { box-shadow: none; }
+      .view { display: none !important; }
+      .view.active { display: block !important; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>調律管理システム</h1>
+    <p>顧客登録・一般顧客・リメイク顧客・次回案内・カレンダーをボタンで切り替えできます。</p>
+  </header>
+
+  <nav class="tabs no-print">
+    <button class="tab-btn active" onclick="showView('calendarView', this)">カレンダー</button>
+    <button class="tab-btn" onclick="showView('newView', this)">顧客登録</button>
+    <button class="tab-btn" onclick="showView('normalView', this)">一般顧客</button>
+    <button class="tab-btn" onclick="showView('remakeView', this)">リメイク顧客</button>
+    <button class="tab-btn" onclick="showView('contactView', this)">次回案内</button>
+    <button class="tab-btn" onclick="showView('historyView', this)">選択中・履歴</button>
+  </nav>
+
+  <main>
+    <section id="newView" class="view">
+      <div class="layout">
+        <div>
+          <section>
+            <h2>新規登録・編集</h2>
+            <input type="hidden" id="customerId" />
+
+            <label>お客様名</label>
+            <input id="name" placeholder="例：山田 太郎" />
+
+            <label>ふりがな</label>
+            <input id="kana" placeholder="例：やまだ たろう" />
+
+            <label>電話番号</label>
+            <input id="phone" placeholder="例：090-0000-0000" />
+
+            <label>住所</label>
+            <textarea id="address" placeholder="例：奈良県奈良市..."></textarea>
+
+            <div class="row">
+              <div>
+                <label>ピアノ種類</label>
+                <select id="pianoType">
+                  <option>アップライト</option>
+                  <option>グランド</option>
+                  <option>電子ピアノ</option>
+                  <option>その他</option>
+                </select>
+              </div>
+              <div>
+                <label>メーカー</label>
+                <input id="maker" placeholder="YAMAHA" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label>品番</label>
+                <input id="model" placeholder="U1H など" />
+              </div>
+              <div>
+                <label>製造番号</label>
+                <input id="serial" />
+              </div>
+            </div>
+
+            <label>顧客区分</label>
+            <select id="customerCategory" onchange="toggleRemakeFields()">
+              <option>通常調律</option>
+              <option>リメイク</option>
+            </select>
+
+            <div id="remakeFields" class="slide-panel">
+              <div class="row">
+                <div>
+                  <label>納品日（リメイク用）</label>
+                  <input id="deliveryDate" type="date" onchange="autoSetDeliveryTuningDate()" />
+                </div>
+                <div>
+                  <label>納調予定日（半年後）</label>
+                  <input id="deliveryTuningDate" type="date" />
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label>最終調律日</label>
+                <input id="lastTuningDate" type="date" onchange="autoSetNextContactDate()" />
+              </div>
+              <div>
+                <label>次回案内予定</label>
+                <input id="nextContactDate" type="date" />
+              </div>
+            </div>
+
+            <label>リメイク進行状態</label>
+            <select id="remakeStatus">
+              <option>通常管理</option>
+              <option>納調待ち</option>
+              <option>定期調律移行済</option>
+            </select>
+
+            <label>案内状態</label>
+            <select id="contactStatus">
+              <option>未案内</option>
+              <option>案内済</option>
+              <option>連絡つかず</option>
+              <option>今回は見送り</option>
+              <option>予約済</option>
+              <option>他社へ移行</option>
+            </select>
+
+            <label>注意点・引き継ぎメモ</label>
+            <textarea id="note" placeholder="例：湿気が多い部屋、音色こだわりあり、連絡は夕方希望など"></textarea>
+
+            <button onclick="saveCustomer()">保存する</button>
+            <button class="secondary" onclick="clearForm()">新規入力に戻す</button>
+          </section>
+        </div>
+
+        <section>
+          <h2>使い方</h2>
+          <p>顧客はここで登録します。</p>
+          <p>顧客区分で「リメイク」を選ぶと、納品日・納調予定日が表示されます。</p>
+          <p>最終調律日を入れると、次回案内予定は1年後で自動入力されます。</p>
+        </section>
+      </div>
+    </section>
+
+    <section id="normalView" class="view">
+      <div class="toolbar no-print">
+        <input id="normalSearch" placeholder="一般顧客を検索" oninput="renderNormalCustomers()" />
+        <button class="secondary" onclick="exportCSV()">CSV保存</button>
+        <button class="secondary" onclick="document.getElementById('csvFile').click()">CSV読込</button>
+        <button class="print" onclick="window.print()">印刷</button>
+      </div>
+      <div class="card">
+        <h2>一般顧客一覧</h2>
+        <p class="muted">通常調律のお客様だけを表示します。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>お客様名</th>
+              <th>電話</th>
+              <th>住所</th>
+              <th>ピアノ</th>
+              <th>最終調律</th>
+              <th>次回案内</th>
+              <th class="no-print">操作</th>
+            </tr>
+          </thead>
+          <tbody id="normalTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="remakeView" class="view">
+      <div class="toolbar no-print">
+        <input id="remakeSearch" placeholder="リメイク顧客を検索" oninput="renderRemakeCustomers()" />
+        <button class="secondary" onclick="exportCSV()">CSV保存</button>
+        <button class="secondary" onclick="document.getElementById('csvFile').click()">CSV読込</button>
+        <button class="print" onclick="window.print()">印刷</button>
+      </div>
+      <div class="card">
+        <h2>リメイク顧客一覧</h2>
+        <p class="muted">納品日・納調予定日・納調待ち・定期調律移行済を管理します。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>お客様名</th>
+              <th>電話</th>
+              <th>住所</th>
+              <th>納品日</th>
+              <th>納調予定日</th>
+              <th>状態</th>
+              <th class="no-print">操作</th>
+            </tr>
+          </thead>
+          <tbody id="remakeTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="contactView" class="view">
+      <div class="card">
+        <h2>次回案内リスト</h2>
+        <p class="muted">次回案内予定日が今日以前、または納調予定日が過ぎたお客様を表示します。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>お客様名</th>
+              <th>電話</th>
+              <th>区分</th>
+              <th>予定日</th>
+              <th>案内状態</th>
+              <th class="no-print">操作</th>
+            </tr>
+          </thead>
+          <tbody id="contactTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="calendarView" class="view active">
+      <div class="card">
+        <h2 id="calendarTitle">調律時期一覧</h2>
+        <div class="actions no-print" style="justify-content:space-between;margin-bottom:12px;">
+          <button class="small secondary" onclick="moveCalendar(-12)">‹ 前年</button>
+          <button class="small secondary" onclick="moveCalendar(12)">翌年 ›</button>
+        </div>
+        <div id="monthGrid" class="month-grid"></div>
+      </div>
+    </section>
+
+    <section id="historyView" class="view">
+      <div class="layout">
+        <section>
+          <h2>調律履歴を追加</h2>
+          <p class="muted">一般顧客・リメイク顧客の一覧でお客様を選んでから登録してください。</p>
+          <label>作業日</label>
+          <input id="historyDate" type="date" />
+          <label>担当者</label>
+          <input id="technician" placeholder="例：奥田" />
+          <label>作業内容</label>
+          <textarea id="workContent" placeholder="例：調律、整調、止音不良修理"></textarea>
+          <label>料金</label>
+          <input id="price" type="number" placeholder="例：15000" />
+          <label>次回へのメモ</label>
+          <textarea id="historyNote" placeholder="例：次回は鍵盤調整もおすすめ"></textarea>
+          <button onclick="addHistory()">履歴を追加する</button>
+        </section>
+
+        <section>
+          <h2>選択中のお客様</h2>
+          <div id="selectedCustomer">まだ選択されていません。</div>
+          <h3>調律履歴</h3>
+          <div id="historyList" class="muted">履歴はありません。</div>
+        </section>
+      </div>
+    </section>
+
+    <input id="csvFile" class="hidden" type="file" accept=".csv" onchange="importCSV(event)" />
+  </main>
+
+  <script>
+    let customers = JSON.parse(localStorage.getItem('tuningCustomers') || '[]');
+    let selectedId = null;
+    let calendarStart = new Date();
+    calendarStart.setDate(1);
+
+    function saveToStorage() {
+      localStorage.setItem('tuningCustomers', JSON.stringify(customers));
+    }
+
+    function makeId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2);
+    }
+
+    function showView(viewId, btn) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAll();
+    }
+
+    function autoSetNextContactDate() {
+      const lastTuningDate = document.getElementById('lastTuningDate').value;
+      const nextContactInput = document.getElementById('nextContactDate');
+      if (!lastTuningDate) {
+        nextContactInput.value = '';
+        return;
+      }
+      const d = new Date(lastTuningDate);
+      d.setFullYear(d.getFullYear() + 1);
+      nextContactInput.value = toDateInputValue(d);
+    }
+
+    function toggleRemakeFields() {
+      const category = document.getElementById('customerCategory').value;
+      const remakeFields = document.getElementById('remakeFields');
+      const remakeStatus = document.getElementById('remakeStatus');
+
+      if (category === 'リメイク') {
+        remakeFields.classList.add('open');
+        if (remakeStatus.value === '通常管理') remakeStatus.value = '納調待ち';
+      } else {
+        remakeFields.classList.remove('open');
+        remakeStatus.value = '通常管理';
+      }
+    }
+
+    function autoSetDeliveryTuningDate() {
+      const deliveryDate = document.getElementById('deliveryDate').value;
+      const deliveryTuningInput = document.getElementById('deliveryTuningDate');
+      if (!deliveryDate) {
+        deliveryTuningInput.value = '';
+        return;
+      }
+      const d = new Date(deliveryDate);
+      d.setMonth(d.getMonth() + 6);
+      deliveryTuningInput.value = toDateInputValue(d);
+    }
+
+    function getFormData() {
+      const deliveryDate = document.getElementById('deliveryDate').value;
+      let deliveryTuningDate = document.getElementById('deliveryTuningDate').value;
+
+      if (deliveryDate && !deliveryTuningDate) {
+        const d = new Date(deliveryDate);
+        d.setMonth(d.getMonth() + 6);
+        deliveryTuningDate = toDateInputValue(d);
+      }
+
+      let nextContactDate = document.getElementById('nextContactDate').value;
+      if (!nextContactDate && document.getElementById('lastTuningDate').value) {
+        const d = new Date(document.getElementById('lastTuningDate').value);
+        d.setFullYear(d.getFullYear() + 1);
+        nextContactDate = toDateInputValue(d);
+      }
+
+      return {
+        id: document.getElementById('customerId').value || makeId(),
+        name: document.getElementById('name').value.trim(),
+        kana: document.getElementById('kana').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        pianoType: document.getElementById('pianoType').value,
+        maker: document.getElementById('maker').value.trim(),
+        model: document.getElementById('model').value.trim(),
+        serial: document.getElementById('serial').value.trim(),
+        customerCategory: document.getElementById('customerCategory').value,
+        deliveryDate,
+        deliveryTuningDate,
+        lastTuningDate: document.getElementById('lastTuningDate').value,
+        nextContactDate,
+        remakeStatus: document.getElementById('remakeStatus').value,
+        contactStatus: document.getElementById('contactStatus').value,
+        note: document.getElementById('note').value.trim(),
+        histories: []
+      };
+    }
+
+    function saveCustomer() {
+      const data = getFormData();
+      if (!data.name) {
+        alert('お客様名を入力してください。');
+        return;
+      }
+
+      const index = customers.findIndex(c => c.id === data.id);
+      if (index >= 0) {
+        data.histories = customers[index].histories || [];
+        customers[index] = data;
+      } else {
+        customers.push(data);
+      }
+
+      selectedId = data.id;
+      saveToStorage();
+      renderAll();
+      alert('保存しました。');
+    }
+
+    function editCustomer(id) {
+      const c = customers.find(x => x.id === id);
+      if (!c) return;
+
+      selectedId = id;
+      document.getElementById('customerId').value = c.id;
+      document.getElementById('name').value = c.name || '';
+      document.getElementById('kana').value = c.kana || '';
+      document.getElementById('phone').value = c.phone || '';
+      document.getElementById('address').value = c.address || '';
+      document.getElementById('pianoType').value = c.pianoType || 'アップライト';
+      document.getElementById('maker').value = c.maker || '';
+      document.getElementById('model').value = c.model || '';
+      document.getElementById('serial').value = c.serial || '';
+      document.getElementById('customerCategory').value = c.customerCategory || '通常調律';
+      document.getElementById('deliveryDate').value = c.deliveryDate || '';
+      document.getElementById('deliveryTuningDate').value = c.deliveryTuningDate || '';
+      document.getElementById('lastTuningDate').value = c.lastTuningDate || '';
+      document.getElementById('nextContactDate').value = c.nextContactDate || '';
+      document.getElementById('remakeStatus').value = c.remakeStatus || '通常管理';
+      document.getElementById('contactStatus').value = c.contactStatus || '未案内';
+      document.getElementById('note').value = c.note || '';
+      toggleRemakeFields();
+      renderAll();
+
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('newView').classList.add('active');
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    }
+
+    function clearForm(clearSelected = true) {
+      document.querySelectorAll('#newView input, #newView textarea').forEach(el => el.value = '');
+      document.getElementById('pianoType').value = 'アップライト';
+      document.getElementById('customerCategory').value = '通常調律';
+      document.getElementById('remakeStatus').value = '通常管理';
+      document.getElementById('contactStatus').value = '未案内';
+      toggleRemakeFields();
+      if (clearSelected) selectedId = null;
+      renderAll();
+    }
+
+    function deleteCustomer(id) {
+      const c = customers.find(x => x.id === id);
+      if (!confirm(`${c?.name || 'この顧客'}を削除しますか？`)) return;
+      customers = customers.filter(c => c.id !== id);
+      if (selectedId === id) selectedId = null;
+      saveToStorage();
+      renderAll();
+      clearForm(false);
+    }
+
+    function addHistory() {
+      if (!selectedId) {
+        alert('先に一般顧客またはリメイク顧客の一覧からお客様を選択してください。');
+        return;
+      }
+      const customer = customers.find(c => c.id === selectedId);
+      if (!customer) return;
+
+      const history = {
+        id: makeId(),
+        date: document.getElementById('historyDate').value,
+        technician: document.getElementById('technician').value.trim(),
+        workContent: document.getElementById('workContent').value.trim(),
+        price: document.getElementById('price').value,
+        note: document.getElementById('historyNote').value.trim()
+      };
+
+      if (!history.date || !history.workContent) {
+        alert('作業日と作業内容を入力してください。');
+        return;
+      }
+
+      customer.histories = customer.histories || [];
+      customer.histories.unshift(history);
+      customer.lastTuningDate = history.date;
+
+      const d = new Date(history.date);
+      d.setFullYear(d.getFullYear() + 1);
+      customer.nextContactDate = toDateInputValue(d);
+
+      if (customer.customerCategory === 'リメイク' && customer.remakeStatus === '納調待ち') {
+        customer.remakeStatus = '定期調律移行済';
+      }
+
+      saveToStorage();
+
+      document.getElementById('historyDate').value = '';
+      document.getElementById('technician').value = '';
+      document.getElementById('workContent').value = '';
+      document.getElementById('price').value = '';
+      document.getElementById('historyNote').value = '';
+
+      renderAll();
+      alert('履歴を追加しました。');
+    }
+
+    function deleteHistory(historyId) {
+      const c = customers.find(x => x.id === selectedId);
+      if (!c) return;
+      c.histories = (c.histories || []).filter(h => h.id !== historyId);
+      saveToStorage();
+      renderAll();
+    }
+
+    function setContactStatus(id, status) {
+      const c = customers.find(x => x.id === id);
+      if (!c) return;
+      c.contactStatus = status;
+      saveToStorage();
+      renderAll();
+    }
+
+    function setRemakeCompleted(id) {
+      const c = customers.find(x => x.id === id);
+      if (!c) return;
+      c.remakeStatus = '定期調律移行済';
+      c.contactStatus = '予約済';
+
+      if (c.deliveryTuningDate) {
+        const d = new Date(c.deliveryTuningDate);
+        d.setFullYear(d.getFullYear() + 1);
+        c.nextContactDate = toDateInputValue(d);
+      }
+
+      saveToStorage();
+      renderAll();
+    }
+
+    function needsContact(c) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+
+      if (c.contactStatus === '予約済' || c.contactStatus === '他社へ移行') return false;
+
+      if (c.customerCategory === 'リメイク' && c.deliveryTuningDate && c.remakeStatus === '納調待ち') {
+        return new Date(c.deliveryTuningDate) <= today;
+      }
+
+      if (c.nextContactDate) {
+        return new Date(c.nextContactDate) <= today;
+      }
+
+      return false;
+    }
+
+    function renderAll() {
+      renderNormalCustomers();
+      renderRemakeCustomers();
+      renderContactList();
+      renderCalendar();
+      renderSelected();
+    }
+
+    function renderNormalCustomers() {
+      const tbody = document.getElementById('normalTable');
+      if (!tbody) return;
+      const keyword = (document.getElementById('normalSearch')?.value || '').toLowerCase();
+      tbody.innerHTML = '';
+
+      const list = customers
+        .filter(c => (c.customerCategory || '通常調律') !== 'リメイク')
+        .filter(c => JSON.stringify(c).toLowerCase().includes(keyword))
+        .sort((a, b) => (a.nextContactDate || '9999').localeCompare(b.nextContactDate || '9999'));
+
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="muted">一般顧客はまだ登録されていません。</td></tr>';
+        return;
+      }
+
+      list.forEach(c => {
+        const tr = document.createElement('tr');
+        if (c.id === selectedId) tr.classList.add('selected');
+        tr.onclick = () => selectCustomer(c.id);
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(c.name)}</strong><br><span class="muted">${escapeHtml(c.kana || '')}</span></td>
+          <td>${escapeHtml(c.phone || '')}</td>
+          <td>${escapeHtml(c.address || '')}</td>
+          <td>${escapeHtml(c.pianoType || '')}<br><span class="muted">${escapeHtml([c.maker, c.model].filter(Boolean).join(' '))}</span></td>
+          <td>${escapeHtml(c.lastTuningDate || '')}</td>
+          <td>${c.nextContactDate ? `<span class="pill">${escapeHtml(c.nextContactDate)}</span>` : ''}</td>
+          <td class="actions no-print">
+            <button class="small" onclick="event.stopPropagation(); editCustomer('${c.id}')">編集</button>
+            <button class="small danger" onclick="event.stopPropagation(); deleteCustomer('${c.id}')">削除</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderRemakeCustomers() {
+      const tbody = document.getElementById('remakeTable');
+      if (!tbody) return;
+      const keyword = (document.getElementById('remakeSearch')?.value || '').toLowerCase();
+      tbody.innerHTML = '';
+
+      const list = customers
+        .filter(c => c.customerCategory === 'リメイク')
+        .filter(c => JSON.stringify(c).toLowerCase().includes(keyword))
+        .sort((a, b) => (a.deliveryTuningDate || a.nextContactDate || '9999').localeCompare(b.deliveryTuningDate || b.nextContactDate || '9999'));
+
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="muted">リメイク顧客はまだ登録されていません。</td></tr>';
+        return;
+      }
+
+      list.forEach(c => {
+        const tr = document.createElement('tr');
+        if (c.id === selectedId) tr.classList.add('selected');
+        tr.onclick = () => selectCustomer(c.id);
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(c.name)}</strong><br><span class="muted">${escapeHtml(c.kana || '')}</span></td>
+          <td>${escapeHtml(c.phone || '')}</td>
+          <td>${escapeHtml(c.address || '')}</td>
+          <td>${escapeHtml(c.deliveryDate || '')}</td>
+          <td>${c.deliveryTuningDate ? `<span class="pill orange">${escapeHtml(c.deliveryTuningDate)}</span>` : ''}</td>
+          <td><span class="pill ${c.remakeStatus === '定期調律移行済' ? 'green' : 'black'}">${escapeHtml(c.remakeStatus || '納調待ち')}</span></td>
+          <td class="actions no-print">
+            <button class="small" onclick="event.stopPropagation(); editCustomer('${c.id}')">編集</button>
+            <button class="small print" onclick="event.stopPropagation(); setRemakeCompleted('${c.id}')">納調完了</button>
+            <button class="small danger" onclick="event.stopPropagation(); deleteCustomer('${c.id}')">削除</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderContactList() {
+      const tbody = document.getElementById('contactTable');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const targets = customers
+        .filter(needsContact)
+        .sort((a, b) => getScheduleDate(a).localeCompare(getScheduleDate(b)));
+
+      if (!targets.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="muted">今すぐ案内が必要なお客様はいません。</td></tr>';
+        return;
+      }
+
+      targets.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.onclick = () => selectCustomer(c.id);
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(c.name)}</strong><br><span class="muted">${escapeHtml(c.address || '')}</span></td>
+          <td>${escapeHtml(c.phone || '')}</td>
+          <td><span class="pill ${c.customerCategory === 'リメイク' ? 'black' : ''}">${escapeHtml(c.customerCategory || '通常調律')}</span></td>
+          <td><span class="pill">${escapeHtml(getScheduleDate(c))}</span></td>
+          <td>${escapeHtml(c.contactStatus || '未案内')}</td>
+          <td class="actions no-print">
+            <button class="small" onclick="event.stopPropagation(); setContactStatus('${c.id}', '案内済')">案内済</button>
+            <button class="small secondary" onclick="event.stopPropagation(); setContactStatus('${c.id}', '連絡つかず')">不在</button>
+            <button class="small print" onclick="event.stopPropagation(); setContactStatus('${c.id}', '予約済')">予約済</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderCalendar() {
+      const grid = document.getElementById('monthGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const start = new Date(calendarStart);
+      const end = new Date(start);
+      end.setMonth(end.getMonth() + 12);
+
+      document.getElementById('calendarTitle').textContent =
+        `調律時期一覧｜${formatYm(start)} - ${formatYm(addMonths(start, 11))}`;
+
+      for (let i = 0; i < 12; i++) {
+        const monthDate = addMonths(start, i);
+        const ym = monthDate.toISOString().slice(0, 7);
+
+        const box = document.createElement('div');
+        box.className = 'month-box';
+        box.innerHTML = `<div class="month-title">${formatYm(monthDate)}</div>`;
+
+        const items = customers
+          .map(c => ({ customer: c, date: getScheduleDate(c) }))
+          .filter(x => x.date && x.date.slice(0, 7) === ym)
+          .sort((a, b) => a.date.localeCompare(b.date));
+
+        if (!items.length) {
+          const empty = document.createElement('div');
+          empty.className = 'schedule-item muted';
+          empty.textContent = '予定なし';
+          box.appendChild(empty);
+        } else {
+          items.forEach(({customer:c, date}) => {
+            const item = document.createElement('div');
+            item.className = 'schedule-item';
+            item.innerHTML = `
+              <div class="schedule-date">【予定日】 ${escapeHtml(formatDateJa(date))}</div>
+              <span class="pill gray">${escapeHtml(c.pianoType || 'ピアノ')}</span>
+              <span class="name-link" onclick="editCustomer('${c.id}')">${escapeHtml(c.name)}</span>
+              <span class="pill ${c.customerCategory === 'リメイク' ? 'black' : ''}">${escapeHtml(c.customerCategory || '通常調律')}</span>
+              <div>${escapeHtml(c.address || '')}</div>
+              <div>${escapeHtml(c.phone || '')}</div>
+            `;
+            box.appendChild(item);
+          });
+        }
+
+        grid.appendChild(box);
+      }
+    }
+
+    function selectCustomer(id) {
+      selectedId = id;
+      renderAll();
+      alert('お客様を選択しました。「選択中・履歴」から履歴を追加できます。');
+    }
+
+    function renderSelected() {
+      const c = customers.find(x => x.id === selectedId);
+      const selected = document.getElementById('selectedCustomer');
+      const historyList = document.getElementById('historyList');
+
+      if (!c) {
+        selected.innerHTML = 'まだ選択されていません。';
+        historyList.innerHTML = '<span class="muted">履歴はありません。</span>';
+        return;
+      }
+
+      selected.innerHTML = `
+        <strong style="font-size:18px;">${escapeHtml(c.name)}</strong>
+        <div class="muted">${escapeHtml(c.phone || '')} / ${escapeHtml(c.address || '')}</div>
+        <div style="margin-top:8px;"><strong>顧客区分：</strong>${escapeHtml(c.customerCategory || '通常調律')}</div>
+        <div style="margin-top:6px;">${escapeHtml(c.pianoType || '')} ${escapeHtml(c.maker || '')} ${escapeHtml(c.model || '')} ${escapeHtml(c.serial || '')}</div>
+        <div style="margin-top:8px;"><strong>納品日：</strong>${escapeHtml(c.deliveryDate || 'なし')}</div>
+        <div style="margin-top:8px;"><strong>納調予定日：</strong>${escapeHtml(c.deliveryTuningDate || 'なし')}</div>
+        <div style="margin-top:8px;"><strong>リメイク状態：</strong>${escapeHtml(c.remakeStatus || '通常管理')}</div>
+        <div style="margin-top:8px;"><strong>案内状態：</strong>${escapeHtml(c.contactStatus || '未案内')}</div>
+        <div style="margin-top:8px;"><strong>注意点：</strong>${escapeHtml(c.note || 'なし')}</div>
+      `;
+
+      const histories = c.histories || [];
+      if (!histories.length) {
+        historyList.innerHTML = '<span class="muted">履歴はありません。</span>';
+        return;
+      }
+
+      historyList.innerHTML = histories.map(h => `
+        <div class="history-item">
+          <strong>${escapeHtml(h.date)}</strong>　担当：${escapeHtml(h.technician || '')}
+          <div>${escapeHtml(h.workContent || '')}</div>
+          <div class="muted">料金：${h.price ? Number(h.price).toLocaleString() + '円' : '未入力'}</div>
+          <div class="muted">メモ：${escapeHtml(h.note || '')}</div>
+          <button class="danger no-print" style="width:auto;margin-top:8px;" onclick="deleteHistory('${h.id}')">この履歴を削除</button>
+        </div>
+      `).join('');
+    }
+
+    function getScheduleDate(c) {
+      if (c.customerCategory === 'リメイク' && c.remakeStatus === '納調待ち' && c.deliveryTuningDate) {
+        return c.deliveryTuningDate;
+      }
+      return c.nextContactDate || '';
+    }
+
+    function moveCalendar(months) {
+      calendarStart.setMonth(calendarStart.getMonth() + months);
+      renderCalendar();
+    }
+
+    function exportCSV() {
+      const rows = [[
+        'id','お客様名','顧客区分','納品日','納調予定日','リメイク状態','ふりがな','電話番号','住所','ピアノ種類','メーカー','品番','製造番号','最終調律日','次回案内予定','案内状態','注意点','履歴JSON'
+      ]];
+      customers.forEach(c => rows.push([
+        c.id, c.name, c.customerCategory || '通常調律', c.deliveryDate || '', c.deliveryTuningDate || '', c.remakeStatus || '通常管理', c.kana, c.phone, c.address, c.pianoType, c.maker, c.model, c.serial,
+        c.lastTuningDate, c.nextContactDate, c.contactStatus || '未案内', c.note, JSON.stringify(c.histories || [])
+      ]));
+      const csv = rows.map(row => row.map(v => `"${String(v ?? '').replaceAll('"', '""')}"`).join(',')).join('\n');
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `調律管理データ_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const lines = reader.result.split(/\r?\n/).filter(Boolean);
+        lines.shift();
+        customers = lines.map(line => parseCSVLine(line)).map(cols => ({
+          id: cols[0] || makeId(),
+          name: cols[1] || '',
+          customerCategory: cols[2] || '通常調律',
+          deliveryDate: cols[3] || '',
+          deliveryTuningDate: cols[4] || '',
+          remakeStatus: cols[5] || '通常管理',
+          kana: cols[6] || '',
+          phone: cols[7] || '',
+          address: cols[8] || '',
+          pianoType: cols[9] || 'アップライト',
+          maker: cols[10] || '',
+          model: cols[11] || '',
+          serial: cols[12] || '',
+          lastTuningDate: cols[13] || '',
+          nextContactDate: cols[14] || '',
+          contactStatus: cols[15] || '未案内',
+          note: cols[16] || '',
+          histories: safeJson(cols[17], [])
+        }));
+        selectedId = null;
+        saveToStorage();
+        renderAll();
+        alert('CSVを読み込みました。');
+      };
+      reader.readAsText(file, 'utf-8');
+    }
+
+    function parseCSVLine(line) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const next = line[i + 1];
+        if (char === '"' && inQuotes && next === '"') {
+          current += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result;
+    }
+
+    function safeJson(text, fallback) {
+      try { return JSON.parse(text); } catch { return fallback; }
+    }
+
+    function toDateInputValue(date) {
+      const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return d.toISOString().split('T')[0];
+    }
+
+    function addMonths(date, months) {
+      const d = new Date(date);
+      d.setMonth(d.getMonth() + months);
+      return d;
+    }
+
+    function formatYm(date) {
+      return `${date.getFullYear()}年${String(date.getMonth() + 1).padStart(2, '0')}月`;
+    }
+
+    function formatDateJa(dateText) {
+      if (!dateText) return '';
+      const [y, m, d] = dateText.split('-');
+      return `${y}年${m}月${d}日`;
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    toggleRemakeFields();
+    renderAll();
+  </script>
+</body>
+</html>
