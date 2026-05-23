@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>調律管理システム</title>
+  <title>調律管理システム｜分類ボタン版</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -227,13 +227,13 @@
 </head>
 <body>
   <header>
-    <h1>調律管理システム</h1>
-    <p>顧客登録・一般顧客・リメイク顧客・次回案内・カレンダーをボタンで切り替えできます。</p>
+    <h1>調律管理システム 試作版</h1>
+    <p>新規顧客・一般顧客・リメイク顧客・中古購入顧客・次回案内・カレンダーをボタンで切り替えできます。</p>
   </header>
 
   <nav class="tabs no-print">
     <button class="tab-btn active" onclick="showView('calendarView', this)">カレンダー</button>
-    <button class="tab-btn" onclick="showView('newView', this)">顧客登録</button>
+    <button class="tab-btn" onclick="showView('newView', this)">新規顧客</button>
     <button class="tab-btn" onclick="showView('normalView', this)">一般顧客</button>
     <button class="tab-btn" onclick="showView('remakeView', this)">リメイク顧客</button>
     <button class="tab-btn" onclick="showView('contactView', this)">次回案内</button>
@@ -245,7 +245,7 @@
       <div class="layout">
         <div>
           <section>
-            <h2>新規登録・編集</h2>
+            <h2>新規顧客・編集</h2>
             <input type="hidden" id="customerId" />
 
             <label>お客様名</label>
@@ -272,7 +272,7 @@
               </div>
               <div>
                 <label>メーカー</label>
-                <input id="maker" placeholder="例：YAMAHA" />
+                <input id="maker" placeholder="YAMAHA" />
               </div>
             </div>
 
@@ -291,6 +291,7 @@
             <select id="customerCategory" onchange="toggleRemakeFields()">
               <option>通常調律</option>
               <option>リメイク</option>
+              <option>中古購入</option>
             </select>
 
             <div id="remakeFields" class="slide-panel">
@@ -302,6 +303,19 @@
                 <div>
                   <label>納調予定日（半年後）</label>
                   <input id="deliveryTuningDate" type="date" />
+                </div>
+              </div>
+            </div>
+
+            <div id="usedFields" class="slide-panel">
+              <div class="row">
+                <div>
+                  <label>納品日（中古購入用）</label>
+                  <input id="usedDeliveryDate" type="date" onchange="autoSetUsedFirstTuningDate()" />
+                </div>
+                <div>
+                  <label>初回調律予定日（半年後）</label>
+                  <input id="usedFirstTuningDate" type="date" />
                 </div>
               </div>
             </div>
@@ -321,6 +335,7 @@
             <select id="remakeStatus">
               <option>通常管理</option>
               <option>納調待ち</option>
+              <option>初回調律待ち</option>
               <option>定期調律移行済</option>
             </select>
 
@@ -344,7 +359,7 @@
 
         <section>
           <h2>使い方</h2>
-          <p>顧客はここで登録します。</p>
+          <p>新規顧客はここで登録します。</p>
           <p>顧客区分で「リメイク」を選ぶと、納品日・納調予定日が表示されます。</p>
           <p>最終調律日を入れると、次回案内予定は1年後で自動入力されます。</p>
         </section>
@@ -401,6 +416,33 @@
             </tr>
           </thead>
           <tbody id="remakeTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="usedView" class="view">
+      <div class="toolbar no-print">
+        <input id="usedSearch" placeholder="中古購入顧客を検索" oninput="renderUsedCustomers()" />
+        <button class="secondary" onclick="exportCSV()">CSV保存</button>
+        <button class="secondary" onclick="document.getElementById('csvFile').click()">CSV読込</button>
+        <button class="print" onclick="window.print()">印刷</button>
+      </div>
+      <div class="card">
+        <h2>中古購入顧客一覧</h2>
+        <p class="muted">中古ピアノを購入されたお客様の、納品日・初回調律予定日を管理します。</p>
+        <table>
+          <thead>
+            <tr>
+              <th>お客様名</th>
+              <th>電話</th>
+              <th>住所</th>
+              <th>納品日</th>
+              <th>初回調律予定日</th>
+              <th>状態</th>
+              <th class="no-print">操作</th>
+            </tr>
+          </thead>
+          <tbody id="usedTable"></tbody>
         </table>
       </div>
     </section>
@@ -503,13 +545,19 @@
     function toggleRemakeFields() {
       const category = document.getElementById('customerCategory').value;
       const remakeFields = document.getElementById('remakeFields');
+      const usedFields = document.getElementById('usedFields');
       const remakeStatus = document.getElementById('remakeStatus');
+
+      remakeFields.classList.remove('open');
+      usedFields.classList.remove('open');
 
       if (category === 'リメイク') {
         remakeFields.classList.add('open');
         if (remakeStatus.value === '通常管理') remakeStatus.value = '納調待ち';
+      } else if (category === '中古購入') {
+        usedFields.classList.add('open');
+        if (remakeStatus.value === '通常管理') remakeStatus.value = '初回調律待ち';
       } else {
-        remakeFields.classList.remove('open');
         remakeStatus.value = '通常管理';
       }
     }
@@ -526,14 +574,34 @@
       deliveryTuningInput.value = toDateInputValue(d);
     }
 
+    function autoSetUsedFirstTuningDate() {
+      const usedDeliveryDate = document.getElementById('usedDeliveryDate').value;
+      const usedFirstTuningInput = document.getElementById('usedFirstTuningDate');
+      if (!usedDeliveryDate) {
+        usedFirstTuningInput.value = '';
+        return;
+      }
+      const d = new Date(usedDeliveryDate);
+      d.setMonth(d.getMonth() + 6);
+      usedFirstTuningInput.value = toDateInputValue(d);
+    }
+
     function getFormData() {
       const deliveryDate = document.getElementById('deliveryDate').value;
       let deliveryTuningDate = document.getElementById('deliveryTuningDate').value;
+      const usedDeliveryDate = document.getElementById('usedDeliveryDate').value;
+      let usedFirstTuningDate = document.getElementById('usedFirstTuningDate').value;
 
       if (deliveryDate && !deliveryTuningDate) {
         const d = new Date(deliveryDate);
         d.setMonth(d.getMonth() + 6);
         deliveryTuningDate = toDateInputValue(d);
+      }
+
+      if (usedDeliveryDate && !usedFirstTuningDate) {
+        const d = new Date(usedDeliveryDate);
+        d.setMonth(d.getMonth() + 6);
+        usedFirstTuningDate = toDateInputValue(d);
       }
 
       let nextContactDate = document.getElementById('nextContactDate').value;
@@ -556,6 +624,8 @@
         customerCategory: document.getElementById('customerCategory').value,
         deliveryDate,
         deliveryTuningDate,
+        usedDeliveryDate,
+        usedFirstTuningDate,
         lastTuningDate: document.getElementById('lastTuningDate').value,
         nextContactDate,
         remakeStatus: document.getElementById('remakeStatus').value,
@@ -583,9 +653,7 @@
       selectedId = data.id;
       saveToStorage();
       renderAll();
-
       clearForm();
-
       alert('保存しました。');
     }
 
@@ -606,6 +674,8 @@
       document.getElementById('customerCategory').value = c.customerCategory || '通常調律';
       document.getElementById('deliveryDate').value = c.deliveryDate || '';
       document.getElementById('deliveryTuningDate').value = c.deliveryTuningDate || '';
+      document.getElementById('usedDeliveryDate').value = c.usedDeliveryDate || '';
+      document.getElementById('usedFirstTuningDate').value = c.usedFirstTuningDate || '';
       document.getElementById('lastTuningDate').value = c.lastTuningDate || '';
       document.getElementById('nextContactDate').value = c.nextContactDate || '';
       document.getElementById('remakeStatus').value = c.remakeStatus || '通常管理';
@@ -675,6 +745,10 @@
         customer.remakeStatus = '定期調律移行済';
       }
 
+      if (customer.customerCategory === '中古購入' && customer.remakeStatus === '初回調律待ち') {
+        customer.remakeStatus = '定期調律移行済';
+      }
+
       saveToStorage();
 
       document.getElementById('historyDate').value = '';
@@ -719,6 +793,22 @@
       renderAll();
     }
 
+    function setUsedCompleted(id) {
+      const c = customers.find(x => x.id === id);
+      if (!c) return;
+      c.remakeStatus = '定期調律移行済';
+      c.contactStatus = '予約済';
+
+      if (c.usedFirstTuningDate) {
+        const d = new Date(c.usedFirstTuningDate);
+        d.setFullYear(d.getFullYear() + 1);
+        c.nextContactDate = toDateInputValue(d);
+      }
+
+      saveToStorage();
+      renderAll();
+    }
+
     function needsContact(c) {
       const today = new Date();
       today.setHours(0,0,0,0);
@@ -727,6 +817,10 @@
 
       if (c.customerCategory === 'リメイク' && c.deliveryTuningDate && c.remakeStatus === '納調待ち') {
         return new Date(c.deliveryTuningDate) <= today;
+      }
+
+      if (c.customerCategory === '中古購入' && c.usedFirstTuningDate && c.remakeStatus === '初回調律待ち') {
+        return new Date(c.usedFirstTuningDate) <= today;
       }
 
       if (c.nextContactDate) {
@@ -739,6 +833,7 @@
     function renderAll() {
       renderNormalCustomers();
       renderRemakeCustomers();
+      renderUsedCustomers();
       renderContactList();
       renderCalendar();
       renderSelected();
@@ -751,7 +846,7 @@
       tbody.innerHTML = '';
 
       const list = customers
-        .filter(c => (c.customerCategory || '通常調律') !== 'リメイク')
+        .filter(c => (c.customerCategory || '通常調律') !== 'リメイク' && (c.customerCategory || '通常調律') !== '中古購入')
         .filter(c => JSON.stringify(c).toLowerCase().includes(keyword))
         .sort((a, b) => (a.nextContactDate || '9999').localeCompare(b.nextContactDate || '9999'));
 
@@ -817,6 +912,43 @@
       });
     }
 
+    function renderUsedCustomers() {
+      const tbody = document.getElementById('usedTable');
+      if (!tbody) return;
+      const keyword = (document.getElementById('usedSearch')?.value || '').toLowerCase();
+      tbody.innerHTML = '';
+
+      const list = customers
+        .filter(c => c.customerCategory === '中古購入')
+        .filter(c => JSON.stringify(c).toLowerCase().includes(keyword))
+        .sort((a, b) => (a.usedFirstTuningDate || a.nextContactDate || '9999').localeCompare(b.usedFirstTuningDate || b.nextContactDate || '9999'));
+
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="muted">中古購入顧客はまだ登録されていません。</td></tr>';
+        return;
+      }
+
+      list.forEach(c => {
+        const tr = document.createElement('tr');
+        if (c.id === selectedId) tr.classList.add('selected');
+        tr.onclick = () => selectCustomer(c.id);
+        tr.innerHTML = `
+          <td><strong>${escapeHtml(c.name)}</strong><br><span class="muted">${escapeHtml(c.kana || '')}</span></td>
+          <td>${escapeHtml(c.phone || '')}</td>
+          <td>${escapeHtml(c.address || '')}</td>
+          <td>${escapeHtml(c.usedDeliveryDate || '')}</td>
+          <td>${c.usedFirstTuningDate ? `<span class="pill orange">${escapeHtml(c.usedFirstTuningDate)}</span>` : ''}</td>
+          <td><span class="pill ${c.remakeStatus === '定期調律移行済' ? 'green' : 'black'}">${escapeHtml(c.remakeStatus || '初回調律待ち')}</span></td>
+          <td class="actions no-print">
+            <button class="small" onclick="event.stopPropagation(); editCustomer('${c.id}')">編集</button>
+            <button class="small print" onclick="event.stopPropagation(); setUsedCompleted('${c.id}')">初回調律完了</button>
+            <button class="small danger" onclick="event.stopPropagation(); deleteCustomer('${c.id}')">削除</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
     function renderContactList() {
       const tbody = document.getElementById('contactTable');
       if (!tbody) return;
@@ -837,7 +969,7 @@
         tr.innerHTML = `
           <td><strong>${escapeHtml(c.name)}</strong><br><span class="muted">${escapeHtml(c.address || '')}</span></td>
           <td>${escapeHtml(c.phone || '')}</td>
-          <td><span class="pill ${c.customerCategory === 'リメイク' ? 'black' : ''}">${escapeHtml(c.customerCategory || '通常調律')}</span></td>
+          <td><span class="pill ${c.customerCategory === 'リメイク' ? 'black' : c.customerCategory === '中古購入' ? 'orange' : ''}">${escapeHtml(c.customerCategory || '通常調律')}</span></td>
           <td><span class="pill">${escapeHtml(getScheduleDate(c))}</span></td>
           <td>${escapeHtml(c.contactStatus || '未案内')}</td>
           <td class="actions no-print">
@@ -888,7 +1020,7 @@
               <div class="schedule-date">【予定日】 ${escapeHtml(formatDateJa(date))}</div>
               <span class="pill gray">${escapeHtml(c.pianoType || 'ピアノ')}</span>
               <span class="name-link" onclick="editCustomer('${c.id}')">${escapeHtml(c.name)}</span>
-              <span class="pill ${c.customerCategory === 'リメイク' ? 'black' : ''}">${escapeHtml(c.customerCategory || '通常調律')}</span>
+              <span class="pill ${c.customerCategory === 'リメイク' ? 'black' : c.customerCategory === '中古購入' ? 'orange' : ''}">${escapeHtml(c.customerCategory || '通常調律')}</span>
               <div>${escapeHtml(c.address || '')}</div>
               <div>${escapeHtml(c.phone || '')}</div>
             `;
@@ -924,6 +1056,8 @@
         <div style="margin-top:6px;">${escapeHtml(c.pianoType || '')} ${escapeHtml(c.maker || '')} ${escapeHtml(c.model || '')} ${escapeHtml(c.serial || '')}</div>
         <div style="margin-top:8px;"><strong>納品日：</strong>${escapeHtml(c.deliveryDate || 'なし')}</div>
         <div style="margin-top:8px;"><strong>納調予定日：</strong>${escapeHtml(c.deliveryTuningDate || 'なし')}</div>
+        <div style="margin-top:8px;"><strong>中古納品日：</strong>${escapeHtml(c.usedDeliveryDate || 'なし')}</div>
+        <div style="margin-top:8px;"><strong>中古初回調律予定日：</strong>${escapeHtml(c.usedFirstTuningDate || 'なし')}</div>
         <div style="margin-top:8px;"><strong>リメイク状態：</strong>${escapeHtml(c.remakeStatus || '通常管理')}</div>
         <div style="margin-top:8px;"><strong>案内状態：</strong>${escapeHtml(c.contactStatus || '未案内')}</div>
         <div style="margin-top:8px;"><strong>注意点：</strong>${escapeHtml(c.note || 'なし')}</div>
@@ -950,6 +1084,9 @@
       if (c.customerCategory === 'リメイク' && c.remakeStatus === '納調待ち' && c.deliveryTuningDate) {
         return c.deliveryTuningDate;
       }
+      if (c.customerCategory === '中古購入' && c.remakeStatus === '初回調律待ち' && c.usedFirstTuningDate) {
+        return c.usedFirstTuningDate;
+      }
       return c.nextContactDate || '';
     }
 
@@ -960,10 +1097,10 @@
 
     function exportCSV() {
       const rows = [[
-        'id','お客様名','顧客区分','納品日','納調予定日','リメイク状態','ふりがな','電話番号','住所','ピアノ種類','メーカー','品番','製造番号','最終調律日','次回案内予定','案内状態','注意点','履歴JSON'
+        'id','お客様名','顧客区分','納品日','納調予定日','中古納品日','中古初回調律予定日','リメイク状態','ふりがな','電話番号','住所','ピアノ種類','メーカー','品番','製造番号','最終調律日','次回案内予定','案内状態','注意点','履歴JSON'
       ]];
       customers.forEach(c => rows.push([
-        c.id, c.name, c.customerCategory || '通常調律', c.deliveryDate || '', c.deliveryTuningDate || '', c.remakeStatus || '通常管理', c.kana, c.phone, c.address, c.pianoType, c.maker, c.model, c.serial,
+        c.id, c.name, c.customerCategory || '通常調律', c.deliveryDate || '', c.deliveryTuningDate || '', c.usedDeliveryDate || '', c.usedFirstTuningDate || '', c.remakeStatus || '通常管理', c.kana, c.phone, c.address, c.pianoType, c.maker, c.model, c.serial,
         c.lastTuningDate, c.nextContactDate, c.contactStatus || '未案内', c.note, JSON.stringify(c.histories || [])
       ]));
       const csv = rows.map(row => row.map(v => `"${String(v ?? '').replaceAll('"', '""')}"`).join(',')).join('\n');
